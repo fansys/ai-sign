@@ -82,7 +82,7 @@ export default {
         <div class="m">{{ a.message || stLabel(a.status) }}</div>
         <span class="pill y">{{ trLabel(a.trigger) }}</span> <span class="pill" :class="stCls(a.status)">{{ stLabel(a.status) }}</span>
         <template v-if="a.repeat > 1"> <span class="pill">×{{ a.repeat }}</span></template>
-        <template v-if="a.version_id"> <span class="pill">v{{ a.version_id }}</span></template>
+        <template v-if="a.version"> <span class="pill">v{{ a.version }}</span></template>
         <div class="logs">{{ a._logs }}</div>
       </div>
     </div>

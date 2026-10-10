@@ -309,3 +309,17 @@ def test_cli_download_zip_runs_without_install(client, tmp_path):
     assert z2 == (d / "sign.conf").read_bytes()
     assert sum(1 for t in client.get("/api/tokens").json() if t["name"] == "cli-download") == 1
     assert client.get("/api/cli/download", params={"server": "javascript:alert(1)"}).status_code == 400
+
+
+def test_run_row_reports_script_version_number(client):
+    """流水里的版本号应是脚本版本号(v1/v2…)，而不是 script_version 表的自增 id。"""
+    c = client
+    c.post("/api/accounts", json={"platform": "workbuddy", "name": "carol"})
+    c.put("/api/platforms/workbuddy/accounts/carol/credentials/auth", content=json.dumps(wb_info(4102444800000)),
+          headers={"content-type": "application/octet-stream"})
+    c.post("/api/runs", json={"platform": "workbuddy"})
+    d = wait_runs(c)
+    vers = c.get("/api/platforms/workbuddy/versions").json()["versions"]
+    act = d["actions"][0]
+    assert act["version_id"] is not None
+    assert act["version"] == next(v["version"] for v in vers if v["id"] == act["version_id"])

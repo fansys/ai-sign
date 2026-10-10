@@ -1,5 +1,8 @@
 # 修改记录
 
+## 2026-10-10 修复流水版本号
+- 当日明细流水的 `vN` 显示的是 script_version 表自增 id，与脚本实际版本号不符；`/api/days`、`/api/runs` 的 run 行新增 `version`（脚本版本号），前端改用它。`version_id` 字段保留。
+
 ## 2026-10-10 CLI 下载改为免安装 zip
 - `GET /api/cli/download` 返回 `sign-cli.zip`：`signcli/` + `sign-cli.sh` / `sign-cli.bat`（解压即用、无需安装，需 Python 3.9+）+ `sign.conf`（内置服务地址与 apikey，权限 600）。
 - apikey 复用名为 `cli-download` 的未吊销 token（仅“提交凭证”权限），没有则自动创建；可在设置页重新生成/删除。

@@ -5,7 +5,7 @@ import json
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy import select
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, object_session
 
 from .. import config, notify, scripts_store, security, services
 from ..db import (Account, ApiToken, Credential, Platform, Run, RunEvent, ScriptDraft, ScriptVersion, get_db,
@@ -384,7 +384,8 @@ def _run_detail(db, rid):
 
 
 def _run_row(r: Run):
-    return {"id": r.id, "account_id": r.account_id, "platform": r.account.platform.name, "account": r.account.name,
+    sv = object_session(r).get(ScriptVersion, r.script_version_id) if r.script_version_id else None
+    return {"version": sv.version if sv else None, "id": r.id, "account_id": r.account_id, "platform": r.account.platform.name, "account": r.account.name,
             "trigger": r.trigger, "status": r.status, "points": r.points, "message": r.message,
             "attempt_no": r.attempt_no, "version_id": r.script_version_id,
             "started_at": r.started_at.strftime("%Y-%m-%d %H:%M:%S"),
