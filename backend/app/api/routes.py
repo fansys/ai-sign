@@ -326,7 +326,7 @@ def get_cred_value(aid: int, name: str, db: Session = Depends(get_db), _=Depends
 # ---------------- CLI 下载 ----------------
 @router.get("/cli/download")
 def cli_download(request: Request, server: str = "", _=Depends(admin)):
-    """下载 cli 包，内置服务地址：优先 ?server=（前端传浏览器所见地址），否则按请求头推断。"""
+    """下载单文件 cli，内置服务地址：优先 ?server=（前端传浏览器所见地址），否则按请求头推断。"""
     from fastapi.responses import Response
     from .. import cli_pack
     if not server:
@@ -334,13 +334,13 @@ def cli_download(request: Request, server: str = "", _=Depends(admin)):
         host = h.get("x-forwarded-host") or h.get("host") or request.url.netloc
         server = f"{h.get('x-forwarded-proto') or request.url.scheme}://{host}"
     try:
-        data = cli_pack.build_zip(server)
+        data = cli_pack.build_pyz(server)
     except ValueError as e:
         raise HTTPException(400, str(e))
     except FileNotFoundError as e:
         raise HTTPException(404, str(e))
-    return Response(data, media_type="application/zip", headers={
-        "Content-Disposition": 'attachment; filename="sign-cli.zip"', "Cache-Control": "no-store"})
+    return Response(data, media_type="application/octet-stream", headers={
+        "Content-Disposition": 'attachment; filename="sign-cli.pyz"', "Cache-Control": "no-store"})
 
 
 # ---------------- 执行 ----------------

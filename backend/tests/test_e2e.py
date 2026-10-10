@@ -285,13 +285,22 @@ def test_bark_settings(client):
     assert client.put("/api/settings/bark", json={"server": "ftp://x"}).status_code == 400
 
 
-def test_cli_download_embeds_server(client):
-    import io, zipfile
+def _pyz_default_url(path):
+    import subprocess, sys
+    code = "import sys;sys.path.insert(0,sys.argv[1]);from signcli import cli;print(cli.default_url())"
+    out = subprocess.run([sys.executable, "-I", "-c", code, str(path)], capture_output=True, text=True)
+    return out.stdout.strip() or out.stderr
+
+
+def test_cli_download_is_single_runnable_file(client, tmp_path):
+    import subprocess, sys
     r = client.get("/api/cli/download", params={"server": "https://sign.example.com/"})
-    assert r.status_code == 200
-    z = zipfile.ZipFile(io.BytesIO(r.content))
-    assert z.read("sign-cli/signcli/_default.py").decode().strip() == "SERVER_URL = 'https://sign.example.com'"
-    assert "sign-cli/pyproject.toml" in z.namelist() and not any("tests" in n or ".venv" in n for n in z.namelist())
+    assert r.status_code == 200 and r.content.startswith(b"#!/usr/bin/env python3\n")
+    f = tmp_path / "sign-cli.pyz"
+    f.write_bytes(r.content)
+    assert _pyz_default_url(f) == "https://sign.example.com"
+    run = subprocess.run([sys.executable, str(f), "--version"], capture_output=True, text=True)
+    assert run.returncode == 0 and run.stdout.strip(), run.stderr
     assert client.get("/api/cli/download", params={"server": "javascript:alert(1)"}).status_code == 400
-    r = client.get("/api/cli/download", headers={"host": "h.local:8000"})
-    assert b"http://h.local:8000" in zipfile.ZipFile(io.BytesIO(r.content)).read("sign-cli/signcli/_default.py")
+    f.write_bytes(client.get("/api/cli/download", headers={"host": "h.local:8000"}).content)
+    assert _pyz_default_url(f) == "http://h.local:8000"

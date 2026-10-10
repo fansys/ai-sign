@@ -1,5 +1,8 @@
 # 修改记录
 
+## 2026-10-10 CLI 下载改为单文件
+- `GET /api/cli/download` 返回单文件 `sign-cli.pyz`（zipapp，带 shebang，仅标准库；Qoder 本机解密才需另装 cryptography），用法 `python3 sign-cli.pyz`。内置服务地址机制不变。
+
 ## 2026-10-10 CI 支持手动触发
 - `docker.yml` 增加 `workflow_dispatch`（Actions 页 Run workflow），可选是否推送镜像；在 main 上手动运行同样打 `latest` 与 sha 标签。
 

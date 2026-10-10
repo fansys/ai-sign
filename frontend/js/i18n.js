@@ -37,7 +37,7 @@ const messages = {
     regen: '重新生成', delTokTitle: '删除 API Token', delTokMsg: '删除后，使用该 token 的 CLI 将无法再提交凭证，且无法恢复。',
     regenTitle: '重新生成 API Token', regenMsg: '旧 token 将立即失效，需要把新值更新到使用它的 CLI 配置（~/.config/fansy/sign.conf）。', regenerated: '已重新生成，可在列表中复制',
     cliTitle: '在本机使用 CLI', cliDownload: '下载 CLI（已内置本服务地址）', downloadFail: '下载失败 HTTP {s}',
-    cliHint: '# 解压下载的 sign-cli.zip 后（服务地址 {url} 已内置）\npip install ./sign-cli   # 或 uv tool install ./sign-cli\nsign-cli init            # 只需填入上面创建的 token\n\n# 也可手动配置 ~/.config/fansy/sign.conf\n[server]\nurl = {url}\napikey = <上面创建的 token>\n\nsign-cli        # 交互确认后提交\nsign-cli push -y  # 全部提交',
+    cliHint: '# 下载的 sign-cli.pyz 是单个文件（服务地址 {url} 已内置，需要 Python 3.9+）\npython3 sign-cli.pyz init    # 只需填入上面创建的 token\npython3 sign-cli.pyz         # 之后同下面的 sign-cli 命令；chmod +x 后可直接 ./sign-cli.pyz\n\n# 也可手动配置 ~/.config/fansy/sign.conf\n[server]\nurl = {url}\napikey = <上面创建的 token>\n\nsign-cli        # 交互确认后提交\nsign-cli push -y  # 全部提交',
   },
   en: {
     title: 'AI Auto Check-in Console', loading: 'Loading…', refresh: 'Refresh', runNow: 'Check in now', runAcc: 'Check in', runTriggered: 'Triggered, refreshing shortly',
@@ -70,7 +70,7 @@ const messages = {
     regen: 'Regenerate', delTokTitle: 'Delete API Token', delTokMsg: 'CLIs using this token will no longer be able to submit credentials. This cannot be undone.',
     regenTitle: 'Regenerate API Token', regenMsg: 'The old token becomes invalid immediately; update the CLI config (~/.config/fansy/sign.conf) with the new value.', regenerated: 'Regenerated; copy it from the list',
     cliTitle: 'Use the CLI on this machine', cliDownload: 'Download CLI (server URL built in)', downloadFail: 'Download failed: HTTP {s}',
-    cliHint: '# After unzipping sign-cli.zip (server URL {url} is built in)\npip install ./sign-cli   # or: uv tool install ./sign-cli\nsign-cli init            # just enter the token created above\n\n# Or configure ~/.config/fansy/sign.conf manually\n[server]\nurl = {url}\napikey = <the token created above>\n\nsign-cli        # confirm interactively, then submit\nsign-cli push -y  # submit all',
+    cliHint: '# The downloaded sign-cli.pyz is a single file (server URL {url} built in; needs Python 3.9+)\npython3 sign-cli.pyz init    # just enter the token created above\npython3 sign-cli.pyz         # then same as the sign-cli commands below; or chmod +x and run ./sign-cli.pyz\n\n# Or configure ~/.config/fansy/sign.conf manually\n[server]\nurl = {url}\napikey = <the token created above>\n\nsign-cli        # confirm interactively, then submit\nsign-cli push -y  # submit all',
   },
 }
 
