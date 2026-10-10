@@ -1,5 +1,8 @@
 # 修改记录
 
+## 2026-10-10 CI 支持手动触发
+- `docker.yml` 增加 `workflow_dispatch`（Actions 页 Run workflow），可选是否推送镜像；在 main 上手动运行同样打 `latest` 与 sha 标签。
+
 ## 2026-10-10 GitHub 仓库地址
 - 仓库为 https://github.com/fansys/ai-sign（origin 用 SSH）；镜像名改为 ghcr.io/fansys/ai-sign（compose、README、Dockerfile source 标签同步；workflow 用 `github.repository`，无需改）。
 
