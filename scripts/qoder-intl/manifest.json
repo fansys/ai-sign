@@ -1,0 +1,17 @@
+{
+  "name": "Qoder",
+  "credentials": [
+    {
+      "name": "auth",
+      "kind": "json",
+      "required": true,
+      "label": "本机解密后的登录态 JSON（sign-cli 提交）"
+    }
+  ],
+  "config": {
+    "api_base": "https://openapi.qoder.sh",
+    "client_type": "10",
+    "version": "0.3.4"
+  },
+  "timeout_sec": 60
+}

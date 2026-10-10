@@ -1,0 +1,16 @@
+services:
+  sign:
+    image: ghcr.io/fansys/ai-sign:latest   # 本地构建改用 `build: .`
+    restart: unless-stopped
+    ports: ["8000:8000"]
+    environment:
+      TZ: Asia/Shanghai
+      # 均可不设：缺省时在 ./data 内自动生成 master.key / admin.token。
+      # 务必备份 ./data：丢失主密钥将无法解密已存凭证。
+      SIGN_MASTER_KEY: ${SIGN_MASTER_KEY:-}
+      SIGN_ADMIN_TOKEN: ${SIGN_ADMIN_TOKEN:-}
+      SIGN_DAILY_AT: "10:05"
+      SIGN_RETRY_HOURS: "11-23"
+      # SIGN_WEBHOOK_URL: https://...
+    volumes: 
+      - ./data:/data

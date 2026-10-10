@@ -1,0 +1,15 @@
+.git
+.github
+data
+**/.venv
+cli/tests
+cli/uv.lock
+**/__pycache__
+**/*.pyc
+**/.pytest_cache
+.ruff_cache
+.verify
+tools
+docs
+*.md
+!README.md

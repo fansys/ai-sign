@@ -1,0 +1,21 @@
+{
+  "name": "Trae CN",
+  "credentials": [
+    {
+      "name": "auth",
+      "kind": "json",
+      "required": true,
+      "label": "storage.json 或 iCubeAuthInfo"
+    },
+    {
+      "name": "device_id",
+      "kind": "text",
+      "required": false,
+      "label": "设备 ID 或 tt_net_config.config（可选）"
+    }
+  ],
+  "config": {
+    "api_base": "https://api.trae.cn/trae/api/v2/ug/checkin_credits"
+  },
+  "timeout_sec": 60
+}

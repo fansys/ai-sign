@@ -1,0 +1,15 @@
+{
+  "name": "WorkBuddy",
+  "credentials": [
+    {
+      "name": "auth",
+      "kind": "json",
+      "required": true,
+      "label": "auth/*.info 文件内容"
+    }
+  ],
+  "config": {
+    "api_base": "https://copilot.tencent.com/v2/billing/meter"
+  },
+  "timeout_sec": 60
+}
