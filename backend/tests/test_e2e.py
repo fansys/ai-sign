@@ -285,22 +285,27 @@ def test_bark_settings(client):
     assert client.put("/api/settings/bark", json={"server": "ftp://x"}).status_code == 400
 
 
-def _pyz_default_url(path):
-    import subprocess, sys
-    code = "import sys;sys.path.insert(0,sys.argv[1]);from signcli import cli;print(cli.default_url())"
-    out = subprocess.run([sys.executable, "-I", "-c", code, str(path)], capture_output=True, text=True)
-    return out.stdout.strip() or out.stderr
-
-
-def test_cli_download_is_single_runnable_file(client, tmp_path):
-    import subprocess, sys
+def test_cli_download_zip_runs_without_install(client, tmp_path):
+    import io, os, subprocess, sys, zipfile
     r = client.get("/api/cli/download", params={"server": "https://sign.example.com/"})
-    assert r.status_code == 200 and r.content.startswith(b"#!/usr/bin/env python3\n")
-    f = tmp_path / "sign-cli.pyz"
-    f.write_bytes(r.content)
-    assert _pyz_default_url(f) == "https://sign.example.com"
-    run = subprocess.run([sys.executable, str(f), "--version"], capture_output=True, text=True)
-    assert run.returncode == 0 and run.stdout.strip(), run.stderr
+    assert r.status_code == 200
+    zipfile.ZipFile(io.BytesIO(r.content)).extractall(tmp_path)
+    d = tmp_path / "sign-cli"
+    conf = (d / "sign.conf").read_text()
+    assert "url = https://sign.example.com\n" in conf and "apikey = sgn_" in conf
+    modes = {i.filename: (i.external_attr >> 16) & 0o777 for i in zipfile.ZipFile(io.BytesIO(r.content)).infolist()}
+    assert modes["sign-cli/sign.conf"] == 0o600 and modes["sign-cli/sign-cli.sh"] == 0o755
+    # 直接运行 sh（不安装）：配置取自同目录 sign.conf，未设 SIGN_CLI_CONFIG
+    env = {k: v for k, v in os.environ.items() if k not in ("SIGN_CLI_CONFIG", "SIGN_SERVER", "SIGN_APIKEY", "PYTHONPATH")}
+    sh = d / "sign-cli.sh"
+    out = subprocess.run(["sh", str(sh), "--version"], capture_output=True, text=True, env=env)
+    assert out.returncode == 0 and out.stdout.strip(), out.stderr
+    code = "import sys;sys.path.insert(0, sys.argv[1]);from signcli import cli;print(cli.CONF.resolve(), cli.load_conf()['url'])"
+    out = subprocess.run([sys.executable, "-I", "-c", code, str(d)], capture_output=True, text=True, env=env, cwd=tmp_path)
+    assert out.stdout.split() == [str((d / "sign.conf").resolve()), "https://sign.example.com"], out.stderr
+    # 重复下载复用同一个 token，不堆积
+    r2 = client.get("/api/cli/download", params={"server": "https://sign.example.com"})
+    z2 = zipfile.ZipFile(io.BytesIO(r2.content)).read("sign-cli/sign.conf")
+    assert z2 == (d / "sign.conf").read_bytes()
+    assert sum(1 for t in client.get("/api/tokens").json() if t["name"] == "cli-download") == 1
     assert client.get("/api/cli/download", params={"server": "javascript:alert(1)"}).status_code == 400
-    f.write_bytes(client.get("/api/cli/download", headers={"host": "h.local:8000"}).content)
-    assert _pyz_default_url(f) == "http://h.local:8000"

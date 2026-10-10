@@ -324,9 +324,25 @@ def get_cred_value(aid: int, name: str, db: Session = Depends(get_db), _=Depends
 
 
 # ---------------- CLI 下载 ----------------
+CLI_TOKEN_NAME = "cli-download"
+
+
+def _cli_token(db: Session) -> str:
+    """下载包内置的 apikey：复用名为 cli-download 的未吊销 token，没有则新建（仅“提交凭证”权限）。"""
+    t = db.scalars(select(ApiToken).where(ApiToken.name == CLI_TOKEN_NAME, ApiToken.revoked_at.is_(None),
+                                          ApiToken.token_enc.is_not(None)).order_by(ApiToken.id)).first()
+    if t:
+        return security.decrypt(t.token_enc).decode()
+    tok = security.new_api_token()
+    db.add(ApiToken(name=CLI_TOKEN_NAME, token_hash=security.hash_token(tok), scopes=["credentials:write"],
+                    token_enc=security.encrypt(tok.encode())))
+    db.commit()
+    return tok
+
+
 @router.get("/cli/download")
-def cli_download(request: Request, server: str = "", _=Depends(admin)):
-    """下载单文件 cli，内置服务地址：优先 ?server=（前端传浏览器所见地址），否则按请求头推断。"""
+def cli_download(request: Request, server: str = "", db: Session = Depends(get_db), _=Depends(admin)):
+    """下载免安装 cli（zip，含 sign.conf：服务地址 + apikey）。地址优先 ?server=（前端传浏览器所见地址），否则按请求头推断。"""
     from fastapi.responses import Response
     from .. import cli_pack
     if not server:
@@ -334,13 +350,14 @@ def cli_download(request: Request, server: str = "", _=Depends(admin)):
         host = h.get("x-forwarded-host") or h.get("host") or request.url.netloc
         server = f"{h.get('x-forwarded-proto') or request.url.scheme}://{host}"
     try:
-        data = cli_pack.build_pyz(server)
+        cli_pack.normalize_server(server)
+        data = cli_pack.build_zip(server, _cli_token(db))
     except ValueError as e:
         raise HTTPException(400, str(e))
     except FileNotFoundError as e:
         raise HTTPException(404, str(e))
-    return Response(data, media_type="application/octet-stream", headers={
-        "Content-Disposition": 'attachment; filename="sign-cli.pyz"', "Cache-Control": "no-store"})
+    return Response(data, media_type="application/zip", headers={
+        "Content-Disposition": 'attachment; filename="sign-cli.zip"', "Cache-Control": "no-store"})
 
 
 # ---------------- 执行 ----------------

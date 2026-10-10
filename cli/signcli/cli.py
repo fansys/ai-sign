@@ -1,6 +1,6 @@
 """sign-cli：提取本机 AI 工具的 ticket 并提交到签到服务（macOS / Windows）。
 
-配置文件 ~/.config/fansy/sign.conf：
+配置文件（服务端下载包自带 ./sign.conf；否则 ~/.config/fansy/sign.conf）：
     [server]
     url    = http://your-host:8000
     apikey = sgn_xxxxxxxx
@@ -22,7 +22,15 @@ from pathlib import Path
 from . import __version__, extractors
 from .client import ApiError, Client
 
-CONF = Path(os.environ.get("SIGN_CLI_CONFIG", Path.home() / ".config" / "fansy" / "sign.conf"))
+def _conf_path() -> Path:
+    """配置文件：SIGN_CLI_CONFIG > 程序目录下的 sign.conf（服务端下载包自带）> ~/.config/fansy/sign.conf"""
+    if os.environ.get("SIGN_CLI_CONFIG"):
+        return Path(os.environ["SIGN_CLI_CONFIG"])
+    bundled = Path(__file__).resolve().parent.parent / "sign.conf"
+    return bundled if bundled.is_file() else Path.home() / ".config" / "fansy" / "sign.conf"
+
+
+CONF = _conf_path()
 NAMES = {"qoder": "Qoder CN", "qoder-intl": "Qoder", "trae": "Trae CN", "workbuddy": "WorkBuddy"}
 
 
@@ -57,18 +65,9 @@ def ask(prompt: str, default: bool = True, assume_yes: bool = False) -> bool:
     return default if not a else a in ("y", "yes", "是")
 
 
-def default_url() -> str:
-    """从服务端下载的包会内置服务地址（signcli/_default.py，由服务端生成）；源码安装时为空。"""
-    try:
-        from ._default import SERVER_URL
-        return SERVER_URL
-    except ImportError:
-        return ""
-
-
 def resolve_server(args) -> tuple[str, str]:
     conf = load_conf()
-    url = args.server or os.environ.get("SIGN_SERVER") or conf["url"] or default_url()
+    url = args.server or os.environ.get("SIGN_SERVER") or conf["url"]
     key = args.apikey or os.environ.get("SIGN_APIKEY") or conf["apikey"]
     if not url or not key:
         print(f"未配置服务地址/apikey。请编辑 {CONF}：\n[server]\nurl = http://host:8000\napikey = sgn_xxx\n或运行 sign-cli init", file=sys.stderr)
@@ -103,8 +102,7 @@ def fmt(t) -> str:
 # ---------- 命令 ----------
 def cmd_init(args):
     cur = load_conf()
-    dflt = cur["url"] or default_url() or "http://localhost:8000"
-    url = input(f"服务地址 [{dflt}]: ").strip() or dflt
+    url = input(f"服务地址 [{cur['url'] or 'http://localhost:8000'}]: ").strip() or cur["url"] or "http://localhost:8000"
     key = input(f"apikey（面板→设置 创建）[{'…' + cur['apikey'][-4:] if cur['apikey'] else ''}]: ").strip() or cur["apikey"]
     save_conf(url, key)
     print(f"已写入 {CONF}")

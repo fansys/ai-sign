@@ -28,7 +28,7 @@ export default {
       toast(t('regenerated'))
       load()
     })
-    const dlCli = guard(() => download('/api/cli/download?server=' + encodeURIComponent(location.origin), 'sign-cli.pyz'))
+    const dlCli = guard(() => download('/api/cli/download?server=' + encodeURIComponent(location.origin), 'sign-cli.zip'))
 
     expose({ load })
     return { tokens, name, origin: location.origin, fmt, create, copy, remove, regen, dlCli }

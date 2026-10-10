@@ -1,7 +1,9 @@
 # 修改记录
 
-## 2026-10-10 CLI 下载改为单文件
-- `GET /api/cli/download` 返回单文件 `sign-cli.pyz`（zipapp，带 shebang，仅标准库；Qoder 本机解密才需另装 cryptography），用法 `python3 sign-cli.pyz`。内置服务地址机制不变。
+## 2026-10-10 CLI 下载改为免安装 zip
+- `GET /api/cli/download` 返回 `sign-cli.zip`：`signcli/` + `sign-cli.sh` / `sign-cli.bat`（解压即用、无需安装，需 Python 3.9+）+ `sign.conf`（内置服务地址与 apikey，权限 600）。
+- apikey 复用名为 `cli-download` 的未吊销 token（仅“提交凭证”权限），没有则自动创建；可在设置页重新生成/删除。
+- CLI 配置查找顺序：`SIGN_CLI_CONFIG` > 程序目录 `sign.conf` > `~/.config/fansy/sign.conf`；移除原 `_default.py` 内置地址机制。
 
 ## 2026-10-10 CI 支持手动触发
 - `docker.yml` 增加 `workflow_dispatch`（Actions 页 Run workflow），可选是否推送镜像；在 main 上手动运行同样打 `latest` 与 sha 标签。
@@ -10,8 +12,7 @@
 - 仓库为 https://github.com/fansys/ai-sign（origin 用 SSH）；镜像名改为 ghcr.io/fansys/ai-sign（compose、README、Dockerfile source 标签同步；workflow 用 `github.repository`，无需改）。
 
 ## 2026-10-10 CLI 下载
-- 设置页「在本机使用 CLI」新增下载按钮：`GET /api/cli/download?server=`（管理员）动态打包 `cli/` 为 zip，写入 `signcli/_default.py` 内置服务地址（前端传 `location.origin`，缺省按 Host/X-Forwarded-* 推断；仅允许 http/https）。不含 apikey。
-- `sign-cli` 地址优先级：`--server` > `SIGN_SERVER` > 配置文件 > 内置地址；`init` 以内置地址为默认值。
+- 设置页「在本机使用 CLI」新增下载按钮：`GET /api/cli/download?server=`（管理员）动态打包 `cli/`（前端传 `location.origin`，缺省按 Host/X-Forwarded-* 推断；仅允许 http/https）。
 - Dockerfile 将 `cli/pyproject.toml`、`cli/signcli` 复制到 `/srv/cli`（`.dockerignore` 不再排除 cli，仍排除 tests/uv.lock）。
 
 ## 2026-10-10 账号单独签到
