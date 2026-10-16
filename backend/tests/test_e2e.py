@@ -323,3 +323,34 @@ def test_run_row_reports_script_version_number(client):
     act = d["actions"][0]
     assert act["version_id"] is not None
     assert act["version"] == next(v["version"] for v in vers if v["id"] == act["version_id"])
+
+
+def test_round_push_is_merged_and_filtered():
+    from app import notify
+    cfg = {"on_success": True, "on_failure": True, "on_auth": False}
+    items = [{"kind": "failure", "label": "Trae/b", "message": "boom", "points": None},
+             {"kind": "success", "label": "Qoder/a", "message": "ok", "points": 5},
+             {"kind": "auth", "label": "WB/c", "message": "expired", "points": None}]
+    title, body = notify.build_round(items, cfg)
+    assert title == "签到成功 1 · 失败 1"
+    assert body.splitlines() == ["[成功] Qoder/a +5积分", "[失败] Trae/b：boom"]   # 成功在前；on_auth 关闭则不出现
+    assert notify.build_round(items[2:], cfg) is None
+
+
+def test_run_many_pushes_once_per_round(monkeypatch):
+    import asyncio
+    from app import notify, services
+    sent = []
+
+    async def fake_run(i, trigger, source_override=None, collector=None):
+        collector.append({"kind": "success", "label": f"P/{i}", "message": "", "points": 1})
+
+    async def fake_send(items):
+        sent.append(list(items))
+
+    monkeypatch.setattr(services, "run_account", fake_run)
+    monkeypatch.setattr(notify, "send_round", fake_send)
+    asyncio.run(services.run_many([1, 2, 3], "schedule"))
+    assert len(sent) == 1 and len(sent[0]) == 3      # 一轮三个账号 → 一次推送
+    asyncio.run(services.run_many([4], "manual"))
+    assert len(sent) == 2 and len(sent[1]) == 1       # 单独签到一个也推送

@@ -39,6 +39,29 @@ def save(server: str, key: str | None, on_success: bool, on_failure: bool, on_au
         db.commit()
 
 
+_LABEL = {"success": "成功", "failure": "失败", "auth": "需重新授权"}
+
+
+def build_round(items: list[dict], cfg: dict) -> tuple[str, str] | None:
+    """把一轮的结果按开关过滤后合成 (标题, 正文)；没有需要推送的内容返回 None。"""
+    items = [i for i in items if cfg[f"on_{i['kind']}"]]
+    if not items:
+        return None
+    title = "签到" + " · ".join(f"{_LABEL[k]} {n}" for k in _LABEL if (n := sum(i["kind"] == k for i in items)))
+    lines = []
+    for i in sorted(items, key=lambda x: list(_LABEL).index(x["kind"])):
+        extra = f" +{i['points']}积分" if i["kind"] == "success" and i.get("points") else ""
+        lines.append(f"[{_LABEL[i['kind']]}] {i['label']}{extra}" + (f"：{i['message']}" if i["kind"] != "success" and i["message"] else ""))
+    return title, "\n".join(lines)
+
+
+async def send_round(items: list[dict]) -> str | None:
+    """一轮签到结束后统一推送一条。未配置/无内容返回 None。"""
+    cfg = _load()
+    msg = build_round(items, cfg) if _key(cfg) else None
+    return await send(*msg, kind="test") if msg else None
+
+
 async def send(title: str, body: str, *, kind: str = "test") -> str | None:
     """kind: success|failure|auth|test。未配置或该类通知已关闭返回 None；成功返回空串；失败返回错误信息。"""
     cfg = _load()

@@ -189,8 +189,8 @@ def pending_account_ids(db: Session) -> list[int]:
     return out
 
 
-async def run_account(account_id: int, trigger: str, source_override: str | None = None) -> int:
-    """执行一次签到并落库，返回 run_id。"""
+async def run_account(account_id: int, trigger: str, source_override: str | None = None, collector: list | None = None) -> int:
+    """执行一次签到并落库，返回 run_id。需推送的结果追加进 collector（由 run_many 在一轮结束后统一推送）。"""
     if account_id in _running:
         raise ServiceError("该账号正在执行中", 409)
     _running.add(account_id)
@@ -246,19 +246,24 @@ async def run_account(account_id: int, trigger: str, source_override: str | None
             if not is_test:
                 if status in ("failed", "need_auth", "timeout"):
                     await send_webhook(f"[{label}] {status}: {message}")
-                    if status == "need_auth":   # 脚本仅在服务端返回 401/403 或本地凭证已过期时才给出 need_auth
-                        await notify.send("需要重新授权", f"{label}\n{message}", kind="auth")
-                    else:
-                        await notify.send("签到失败", f"{label}\n{message}", kind="failure")
-                elif first_ok:   # 仅当天首次签到成功才推送
-                    await notify.send("签到成功", f"{label}\n{message}" + (f"\n积分 +{points}" if points else ""), kind="success")
+                    # 脚本仅在服务端返回 401/403 或本地凭证已过期时才给出 need_auth
+                    kind = "auth" if status == "need_auth" else "failure"
+                elif first_ok:   # 成功只在该账号当天首次成功时才推送
+                    kind = "success"
+                else:
+                    kind = None
+                if kind and collector is not None:
+                    collector.append({"kind": kind, "label": label, "message": message, "points": points})
             return run_id
     finally:
         _running.discard(account_id)
 
 
 async def run_many(ids: list[int], trigger: str):
-    await asyncio.gather(*(run_account(i, trigger) for i in ids), return_exceptions=True)
+    """执行一轮（也可只有一个账号），全部结束后合并成一条 Bark 推送。"""
+    items: list[dict] = []
+    await asyncio.gather(*(run_account(i, trigger, collector=items) for i in ids), return_exceptions=True)
+    await notify.send_round(items)
 
 
 async def run_pending(trigger: str):
