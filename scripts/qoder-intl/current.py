@@ -83,8 +83,11 @@ def run(ctx):
         raise AuthExpired(f"登录态失效(HTTP {r.status_code})，请在客户端重新登录后重新提交")
     if r.status_code != 200:
         return {"status": "failed", "message": f"活动列表失败 HTTP {r.status_code}"}
-    campaigns = r.json().get("campaigns") or []
-    ctx.log.info("campaigns", "；".join(f"{c.get('campaignKey')}:{c.get('claimStatus')}/{c.get('actionType')}" for c in campaigns)[:500])
+    payload = r.json()
+    campaigns = payload.get("campaigns") or []
+    ctx.log.info("campaigns", f"活动总览：showCampaign={payload.get('showCampaign')}，claimable={payload.get('claimable')}，数量={len(campaigns)}")
+    for i, c in enumerate(campaigns, 1):
+        ctx.log.info("campaign", f"活动{i}：key={c.get('campaignKey')}，状态={c.get('claimStatus')}，动作={c.get('actionType')}，积分={(c.get('benefit') or {}).get('amount')}")
     if not campaigns:
         return {"status": "already", "message": "当前没有可展示的活动"}
     targets = [c for c in campaigns if c.get("claimStatus") == "CLAIMABLE" and c.get("actionType") == "CLAIM_BENEFIT"]
