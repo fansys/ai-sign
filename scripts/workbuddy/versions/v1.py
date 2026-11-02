@@ -78,6 +78,8 @@ def run(ctx):
         raise AuthExpired("accessToken 已过期，需启动 WorkBuddy 刷新登录态后重新提交")
     api = ctx.config.get("api_base", API)
     st = _post(ctx, api, "checkin-status", a)
+    st_data = st.get("data") or {}
+    ctx.log.info("checkin", f"签到状态：code={st.get('code')}，today_checked_in={st_data.get('today_checked_in')}，credit={st_data.get('credit')}，message={st.get('msg')}")
     if st.get("code") != 0:
         return {"status": "failed", "message": f"查询签到状态异常: {st.get('msg')}"}
     if (st.get("data") or {}).get("today_checked_in"):
@@ -85,6 +87,7 @@ def run(ctx):
     if ctx.is_test:
         return {"status": "success", "message": "[试运行] 今日未签到，未领取", "points": 0}
     c = _post(ctx, api, "daily-checkin", a)
+    ctx.log.info("claim", f"领取响应：code={c.get('code')}，credit={(c.get('data') or {}).get('credit')}，message={c.get('msg')}")
     if c.get("code") == 0:
         return {"status": "success", "points": (c.get("data") or {}).get("credit"), "message": "今日已签到"}
     if c.get("code") == 10001:

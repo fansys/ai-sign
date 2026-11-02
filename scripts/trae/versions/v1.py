@@ -122,6 +122,7 @@ def run(ctx):
     api = ctx.config.get("api_base", API)
     dev = ctx.cred("device_id", "").strip()
     status = _unwrap(_post(ctx, f"{api}/status", auth, dev))
+    ctx.log.info("checkin", f"签到状态：checked_in={status.get('checked_in')}，enable={status.get('enable')}，credits={status.get('credits')}")
     if status.get("checked_in"):
         return {"status": "already", "message": "今日已签到", "points": None, "data": {"credits": status.get("credits")}}
     if not status.get("enable"):
@@ -129,10 +130,12 @@ def run(ctx):
     if ctx.is_test:
         return {"status": "success", "message": "[试运行] 签到可用，未领取", "points": 0}
     claim = _post(ctx, f"{api}/claim", auth, dev)
+    ctx.log.info("claim", f"领取响应：code={claim.get('code')}，message={claim.get('message')}，data={json.dumps(claim.get('data') or {}, ensure_ascii=False)[:300]}")
     if claim.get("code") == 0:
         after = {}
         try:
             after = _unwrap(_post(ctx, f"{api}/status", auth, dev))
+            ctx.log.info("checkin", f"领取后状态：checked_in={after.get('checked_in')}，credits={after.get('credits')}")
         except Exception:
             pass
         d = claim.get("data") or {}
