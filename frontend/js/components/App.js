@@ -38,13 +38,14 @@ export default {
     })
     onMounted(() => go(TABS.some(k => '#' + k === location.hash) ? location.hash.slice(1) : 'dash'))
 
-    return { TABS, tab, sub, go, toggleLocale, reload, runNow, toastState, ...Object.fromEntries(Object.entries(views).map(([k, r]) => ['v_' + k, r])) }
+    return { TABS, tab, sub, go, toggleLocale, reload, runNow, toastState, store, ...Object.fromEntries(Object.entries(views).map(([k, r]) => ['v_' + k, r])) }
   },
   template: `
 <header>
   <img class="logo" src="/static/favicon.svg" alt="">
   <div><h1>{{ $t('title') }}</h1><div class="sub">{{ sub }}</div></div>
   <div class="sp"></div>
+  <span v-if="store.status?.app_version" class="pill">v{{ store.status.app_version }}</span>
   <button @click="toggleLocale">{{ $t('langSwitch') }}</button>
   <button @click="reload">{{ $t('refresh') }}</button>
   <button class="pri" @click="runNow">{{ $t('runNow') }}</button>
