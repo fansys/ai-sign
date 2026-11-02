@@ -43,7 +43,12 @@ def on_credential(ctx, name, raw):
     for k, src in (("id", "id"), ("name", "name"), ("phone", "security_mobile"), ("email", "email")):
         if info.get(src):
             user[k] = info[src]
-    norm = {"token": token, "expiresAt": auth.get("expiresAt"), "user": {"id": user.get("id"), "name": user.get("name")}}
+    # 国际版客户端会把机器标识随请求发送；凭证中若有这些字段则保留，避免归一化时丢失。
+    machine = dict(auth.get("machine") or auth.get("device") or {})
+    for k in ("machineOS", "machineHostname", "machineId", "machineToken", "machineCode", "machineType"):
+        if auth.get(k) is not None:
+            machine[k] = auth[k]
+    norm = {"token": token, "expiresAt": auth.get("expiresAt"), "user": {"id": user.get("id"), "name": user.get("name")}, "machine": machine}
     label = f"{user['name']} ({user['email']})" if user.get("name") and user.get("email") else user.get("name")
     meta = {"user": user.get("name"), "expiresAt": auth.get("expiresAt"), "identity": user.get("id"), "label": label}
     return {"value": norm, "meta": meta,
@@ -52,8 +57,16 @@ def on_credential(ctx, name, raw):
 
 def _headers(ctx, token):
     cfg = ctx.config
-    return {"Accept": "application/json", "User-Agent": "Qoder", "Authorization": f"Bearer {token}",
-            "Cosy-ClientType": str(cfg.get("client_type", "10")), "Cosy-Version": str(cfg.get("version", "0.3.4"))}
+    h = {"Accept": "application/json", "User-Agent": "Qoder", "Authorization": f"Bearer {token}",
+         "Cosy-ClientType": str(cfg.get("client_type", "10")), "Cosy-Version": str(cfg.get("version", "0.4.4"))}
+    machine = (ctx.cred_json("auth") or {}).get("machine") or {}
+    names = {"machineOS": "Cosy-MachineOS", "machineHostname": "Cosy-MachineHostname",
+             "machineId": "Cosy-MachineId", "machineToken": "Cosy-MachineToken",
+             "machineCode": "Cosy-MachineCode", "machineType": "Cosy-MachineType"}
+    for key, header in names.items():
+        if machine.get(key):
+            h[header] = str(machine[key])
+    return h
 
 
 def run(ctx):
@@ -71,6 +84,7 @@ def run(ctx):
     if r.status_code != 200:
         return {"status": "failed", "message": f"活动列表失败 HTTP {r.status_code}"}
     campaigns = r.json().get("campaigns") or []
+    ctx.log.info("campaigns", "；".join(f"{c.get('campaignKey')}:{c.get('claimStatus')}/{c.get('actionType')}" for c in campaigns)[:500])
     if not campaigns:
         return {"status": "already", "message": "当前没有可展示的活动"}
     targets = [c for c in campaigns if c.get("claimStatus") == "CLAIMABLE" and c.get("actionType") == "CLAIM_BENEFIT"]
