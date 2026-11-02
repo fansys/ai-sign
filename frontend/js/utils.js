@@ -16,7 +16,11 @@ export const trLabel = s => (['schedule', 'retry', 'manual', 'test'].includes(s)
 export const accLabel = a => (a.name === 'default' || a.name === a.platform_name ? a.platform_name : a.platform_name + ' / ' + a.name)
 export const runLabel = r => r.platform + (r.account === 'default' || r.account === r.platform ? '' : ' · ' + r.account)
 
-export const eventLines = events => events.map(e => `${e.ts} [${e.level}] ${e.tag} ${e.message}`).join('\n')
+const EVENT_TAG = { http: '请求', campaigns: '活动总览', campaign: '活动', checkin: '签到状态', claim: '领取', result: '结果' }
+export const eventLines = events => events.map(e => {
+  const tag = EVENT_TAG[e.tag] || e.tag || '日志'
+  return `${e.ts}  [${tag}] ${e.message}`
+}).join('\n')
 
 /** 按行 LCS 对比 a→b，返回 [{cls:'a'|'d', text}]（相同行省略） */
 export function lineDiff(a, b) {

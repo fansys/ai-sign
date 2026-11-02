@@ -11,6 +11,8 @@ export default {
     const plat = ref(''), accId = ref('')
     const src = ref(''), isDraft = ref(false)
     const versions = ref([]), activeVid = ref(null)
+    const activeVersion = computed(() => versions.value.find(v => v.id === activeVid.value)?.version ?? null)
+    const activeVersionLabel = computed(() => versions.value.find(v => v.id === activeVid.value)?.version_label ?? '')
     const out = ref('—')
     const diff = ref(null)   // {title, rows}
 
@@ -68,14 +70,14 @@ export default {
     })
 
     expose({ load })
-    return { plats, plat, accId, platAccs, src, isDraft, versions, activeVid, out, diff, accLabel, fmt, loadScript, saveDraft, testRun, publish, activate, loadVer, diffVer }
+    return { plats, plat, accId, platAccs, src, isDraft, versions, activeVid, activeVersion, activeVersionLabel, out, diff, accLabel, fmt, loadScript, saveDraft, testRun, publish, activate, loadVer, diffVer }
   },
   template: `
 <div class="panel w">
   <div class="flex" style="margin-bottom:12px">
     <b>{{ $t('platform') }}</b>
     <select v-model="plat" @change="loadScript"><option v-for="p in plats" :key="p.key" :value="p.key">{{ p.name }}</option></select>
-    <span class="pill" :class="isDraft ? 'o' : 'g'">{{ isDraft ? $t('draft') : $t('activeVersion') }}</span><span class="sp"></span>
+    <span class="pill" :class="isDraft ? 'o' : 'g'">{{ isDraft ? $t('draft') : $t('activeVersion') }}</span><span v-if="activeVersionLabel" class="pill">当前版本 {{ activeVersionLabel }}</span><span class="sp"></span>
     <select v-model="accId">
       <option v-for="a in platAccs" :key="a.id" :value="a.id">{{ accLabel(a) }}</option>
       <option v-if="!platAccs.length" value="">{{ $t('noAcc') }}</option>
@@ -90,7 +92,7 @@ export default {
   <table>
     <tr><th>{{ $t('version') }}</th><th>{{ $t('note') }}</th><th>{{ $t('author') }}</th><th>{{ $t('time') }}</th><th></th></tr>
     <tr v-for="x in versions" :key="x.id">
-      <td>v{{ x.version }} <span v-if="x.id === activeVid" class="pill g">{{ $t('inUse') }}</span></td>
+      <td>{{ x.version_label }} <span v-if="x.id === activeVid" class="pill g">{{ $t('inUse') }}</span></td>
       <td>{{ x.note }}</td><td>{{ x.author }}</td><td>{{ fmt(x.created_at) }}</td>
       <td><button class="sm" @click="loadVer(x.id)">{{ $t('load') }}</button> <button class="sm" @click="diffVer(x.id)">{{ $t('compare') }}</button> <button v-if="x.id !== activeVid" class="sm" @click="activate(x.id)">{{ $t('enable') }}</button></td>
     </tr>

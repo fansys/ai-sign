@@ -57,8 +57,10 @@ def _account(db, aid) -> Account:
 
 
 def _p(p: Platform):
+    sv = object_session(p).get(ScriptVersion, p.active_version_id) if p.active_version_id else None
     return {"id": p.id, "key": p.key, "name": p.name, "enabled": p.enabled, "manifest": p.manifest,
-            "active_version_id": p.active_version_id}
+            "active_version_id": p.active_version_id, "active_version": sv.version if sv else None,
+            "active_version_label": f"{sv.created_at.strftime('%Y%m%d%H%M')}-{sv.sha256[:7]}" if sv else None}
 
 
 def _a(a: Account):
@@ -73,7 +75,7 @@ def _c(c: Credential):
 
 
 def _v(v: ScriptVersion, with_src=False):
-    d = {"id": v.id, "version": v.version, "note": v.note, "author": v.author, "sha256": v.sha256[:12],
+    d = {"id": v.id, "version": v.version, "version_label": f"{v.created_at.strftime('%Y%m%d%H%M')}-{v.sha256[:7]}", "note": v.note, "author": v.author, "sha256": v.sha256[:12],
          "created_at": v.created_at.isoformat(), "parent_version_id": v.parent_version_id}
     if with_src:
         d["source"] = v.source
@@ -385,7 +387,7 @@ def _run_detail(db, rid):
 
 def _run_row(r: Run):
     sv = object_session(r).get(ScriptVersion, r.script_version_id) if r.script_version_id else None
-    return {"version": sv.version if sv else None, "id": r.id, "account_id": r.account_id, "platform": r.account.platform.name, "account": r.account.name,
+    return {"version": sv.version if sv else None, "version_label": f"{sv.created_at.strftime('%Y%m%d%H%M')}-{sv.sha256[:7]}" if sv else None, "id": r.id, "account_id": r.account_id, "platform": r.account.platform.name, "account": r.account.name,
             "trigger": r.trigger, "status": r.status, "points": r.points, "message": r.message,
             "attempt_no": r.attempt_no, "version_id": r.script_version_id,
             "started_at": r.started_at.strftime("%Y-%m-%d %H:%M:%S"),
